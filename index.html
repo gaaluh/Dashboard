@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover">
+<meta name="theme-color" content="#F6F7FB">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/htm@3.1.1/dist/htm.umd.js"></script>
+<style>
+:root{
+  --bg:#F6F7FB; --surface:#FFFFFF; --surface2:#EEF0F7; --line:#E3E6EF;
+  --text:#14172B; --muted:#5B6178;
+  --primary:#3346D3; --primary-soft:#E4E8FF; --on-primary:#FFFFFF;
+  --green:#0B7A5C; --green-soft:#DDF5EC; --red:#C62F4B; --red-soft:#FDE6EA;
+  --amber:#A15C00; --amber-soft:#FFF1DB;
+  --hero:#1B2257; --hero-text:#FFFFFF; --hero-muted:#B9C0F0;
+  --shadow:0 1px 2px rgba(20,23,43,.06),0 8px 24px rgba(20,23,43,.06);
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#0F1120; --surface:#181B2E; --surface2:#22263D; --line:#2C3150;
+    --text:#ECEEF8; --muted:#A3A9C4;
+    --primary:#9AA8FF; --primary-soft:#2A3170; --on-primary:#0F1120;
+    --green:#5FD4AE; --green-soft:#123A30; --red:#FF8FA3; --red-soft:#3D1A24;
+    --amber:#FFC266; --amber-soft:#3A2A10;
+    --hero:#252C6E; --hero-text:#FFFFFF; --hero-muted:#C4CAF5;
+    --shadow:none; color-scheme:dark;
+  }
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:'Plus Jakarta Sans',system-ui,-apple-system,Roboto,sans-serif}
+button,input,textarea,select{font:inherit;color:inherit}
+button{cursor:pointer;border:none;background:none}
+.app{max-width:480px;margin:0 auto;min-height:100vh;position:relative;padding-bottom:calc(96px + env(safe-area-inset-bottom))}
+
+.appbar{position:sticky;top:0;z-index:20;background:var(--bg);padding:calc(14px + env(safe-area-inset-top)) 20px 10px;display:flex;align-items:center;justify-content:space-between}
+.appbar h1{margin:0;font-size:24px;font-weight:800;letter-spacing:-.02em}
+.appbar p{margin:2px 0 0;font-size:13px;color:var(--muted)}
+.icon-btn{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;color:var(--text)}
+.icon-btn:active{background:var(--surface2)}
+.spin{animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+
+.section{padding:0 20px}
+.section-title{display:flex;justify-content:space-between;align-items:baseline;margin:22px 0 10px}
+.section-title h2{margin:0;font-size:16px;font-weight:700}
+.section-title button{font-size:13px;font-weight:700;color:var(--primary);padding:6px 0}
+
+.hero{background:var(--hero);color:var(--hero-text);border-radius:28px;padding:22px;position:relative;overflow:hidden}
+.hero::after{content:"";position:absolute;right:-60px;top:-60px;width:200px;height:200px;border-radius:50%;border:28px solid rgba(255,255,255,.06)}
+.hero small{color:var(--hero-muted);font-size:13px;font-weight:600}
+.hero .big{font-size:32px;font-weight:800;letter-spacing:-.02em;margin:6px 0 18px}
+.hero-split{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.hero-split div{background:rgba(255,255,255,.08);border-radius:16px;padding:12px}
+.hero-split span{display:block;font-size:12px;color:var(--hero-muted);font-weight:600}
+.hero-split b{display:block;font-size:15px;margin-top:4px}
+
+.quick{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
+.quick button{background:var(--surface);border-radius:20px;padding:14px;display:flex;align-items:center;gap:12px;text-align:left;box-shadow:var(--shadow);font-weight:700;font-size:14px}
+.quick .qi{width:40px;height:40px;border-radius:14px;display:grid;place-items:center;flex-shrink:0}
+
+.list{background:var(--surface);border-radius:24px;box-shadow:var(--shadow);overflow:hidden}
+.item{display:flex;gap:14px;align-items:center;padding:14px 16px;width:100%;text-align:left}
+.item + .item{border-top:1px solid var(--line)}
+button.item:active{background:var(--surface2)}
+.avatar{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:16px;flex-shrink:0}
+.lead{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;flex-shrink:0}
+.item .body{flex:1;min-width:0}
+.item .t{font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item .s{font-size:13px;color:var(--muted);margin-top:2px}
+.item .r{text-align:right;flex-shrink:0}
+.item .amt{font-weight:800;font-size:15px}
+.badge{display:inline-block;font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px;margin-top:4px}
+
+.chips{display:flex;gap:8px;overflow-x:auto;padding:4px 20px 6px;scrollbar-width:none}
+.chip{height:36px;padding:0 16px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-size:13px;font-weight:600;white-space:nowrap;color:var(--muted)}
+.chip.on{background:var(--primary-soft);border-color:transparent;color:var(--primary)}
+.seg{display:flex;background:var(--surface2);border-radius:16px;padding:4px}
+.seg button{flex:1;min-height:40px;border-radius:12px;font-weight:700;font-size:14px;color:var(--muted);padding:6px}
+.seg button.on{background:var(--surface);color:var(--text);box-shadow:var(--shadow)}
+
+.sum{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.sum div{border-radius:20px;padding:16px}
+.sum span{font-size:12px;font-weight:700}
+.sum b{display:block;font-size:19px;margin-top:6px;letter-spacing:-.01em}
+
+.empty{text-align:center;padding:36px 24px;color:var(--muted);font-size:14px}
+.empty b{display:block;color:var(--text);font-size:15px;margin-bottom:4px}
+
+.nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:var(--surface);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(3,1fr);padding:10px 8px calc(12px + env(safe-area-inset-bottom));z-index:30}
+.nav button{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:12px;font-weight:600;color:var(--muted)}
+.nav .pill{width:64px;height:32px;border-radius:999px;display:grid;place-items:center;transition:background .2s}
+.nav button.on{color:var(--text);font-weight:800}
+.nav button.on .pill{background:var(--primary-soft);color:var(--primary)}
+
+.fab{position:fixed;right:max(20px,calc(50% - 220px));bottom:calc(92px + env(safe-area-inset-bottom));z-index:31;height:56px;padding:0 20px 0 16px;border-radius:18px;background:var(--primary);color:var(--on-primary);display:flex;align-items:center;gap:8px;font-weight:700;box-shadow:0 6px 18px rgba(51,70,211,.35)}
+.fab:active{transform:scale(.96)}
+
+.scrim{position:fixed;inset:0;background:rgba(10,12,25,.45);z-index:50;animation:fade .2s}
+.sheet{position:fixed;left:50%;bottom:0;transform:translateX(-50%);width:100%;max-width:480px;max-height:92vh;overflow-y:auto;background:var(--surface);border-radius:28px 28px 0 0;z-index:51;padding:10px 20px calc(20px + env(safe-area-inset-bottom));animation:up .28s cubic-bezier(.2,.9,.3,1)}
+.handle{width:36px;height:4px;border-radius:4px;background:var(--line);margin:4px auto 14px}
+.sheet h3{margin:0 0 16px;font-size:20px;font-weight:800}
+@keyframes up{from{transform:translate(-50%,100%)}to{transform:translate(-50%,0)}}
+@keyframes fade{from{opacity:0}}
+
+.field{margin-bottom:14px}
+.field label{display:block;font-size:13px;font-weight:700;color:var(--muted);margin:0 0 6px 4px}
+.field input,.field textarea{width:100%;height:52px;border-radius:16px;border:1.5px solid var(--line);background:var(--bg);padding:0 16px;font-size:15px;outline:none}
+.field textarea{height:auto;padding:14px 16px;resize:none}
+.field input:focus,.field textarea:focus{border-color:var(--primary)}
+.money{position:relative}
+.money span{position:absolute;left:16px;top:50%;transform:translateY(-50%);font-weight:700;color:var(--muted)}
+.money input{padding-left:46px;font-size:22px;font-weight:800;height:60px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--bg);border-radius:16px;padding:14px 16px;margin-bottom:14px}
+.toggle-row b{display:block;font-size:15px}.toggle-row small{color:var(--muted);font-size:13px}
+.switch{width:52px;height:32px;border-radius:999px;background:var(--line);position:relative;transition:background .2s;flex-shrink:0}
+.switch::after{content:"";position:absolute;top:4px;left:4px;width:24px;height:24px;border-radius:50%;background:#fff;transition:transform .2s}
+.switch.on{background:var(--primary)}.switch.on::after{transform:translateX(20px)}
+.stepper{display:flex;align-items:center;justify-content:space-between;background:var(--bg);border-radius:16px;padding:8px 8px 8px 16px;margin-bottom:14px;font-weight:600}
+.stepper div{display:flex;align-items:center;gap:6px}
+.stepper button{width:44px;height:44px;border-radius:12px;background:var(--surface);font-size:20px;font-weight:700}
+.stepper b{min-width:72px;text-align:center}
+.btn{width:100%;height:56px;border-radius:18px;background:var(--primary);color:var(--on-primary);font-weight:800;font-size:16px;display:flex;align-items:center;justify-content:center;gap:10px}
+.btn:disabled{opacity:.6}
+.btn.ghost{background:var(--surface2);color:var(--text);margin-top:10px}
+.choice{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.choice button{background:var(--bg);border-radius:20px;padding:18px 14px;text-align:left;font-weight:700}
+.choice small{display:block;color:var(--muted);font-weight:500;font-size:12px;margin-top:4px}
+
+.snack{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(160px + env(safe-area-inset-bottom));z-index:60;background:#1F2235;color:#fff;padding:14px 18px;border-radius:14px;font-size:14px;font-weight:600;width:calc(100% - 40px);max-width:440px;animation:fade .2s;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+.snack.err{background:#8E1F35}
+
+.skeleton{height:64px;border-radius:16px;background:linear-gradient(90deg,var(--surface2),var(--surface),var(--surface2));background-size:200% 100%;animation:sk 1.2s infinite;margin-bottom:10px}
+@keyframes sk{to{background-position:-200% 0}}
+button:focus-visible,input:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+const { useState, useEffect, useMemo } = React;
+const html = htm.bind(React.createElement);
+
+/* ---------- Ikon ---------- */
+const P = {
+  home:'M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z',
+  book:'M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5zM8 7h8M8 11h6',
+  wallet:'M3 7a2 2 0 0 1 2-2h13v4M3 7v11a2 2 0 0 0 2 2h15V9H5a2 2 0 0 1-2-2zM16 14.5h.01',
+  plus:'M12 5v14M5 12h14',
+  refresh:'M21 12a9 9 0 1 1-2.64-6.36M21 4v5h-5',
+  bell:'M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0',
+  wrench:'M14.7 6.3a4 4 0 0 0 5 5L22 14l-8 8-2.3-2.3a4 4 0 0 0-5-5L4.4 12.4 12.4 4.4z',
+  check:'M20 6 9 17l-5-5'
+};
+const Icon = ({ n, s = 22 }) => html`<svg width=${s} height=${s} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d=${P[n]}/></svg>`;
+
+/* ---------- Utilitas ---------- */
+const today = () => new Date().toLocaleDateString('sv-SE');
+const rp = n => 'Rp ' + Number(n || 0).toLocaleString('id-ID');
+const rpShort = n => { n = Number(n||0); if (n >= 1e9) return 'Rp ' + (n/1e9).toLocaleString('id-ID',{maximumFractionDigits:1}) + ' M'; if (n >= 1e6) return 'Rp ' + (n/1e6).toLocaleString('id-ID',{maximumFractionDigits:1}) + ' jt'; if (n >= 1e3) return 'Rp ' + Math.round(n/1e3) + ' rb'; return rp(n); };
+const fmtTgl = s => { if (!s || s === '-') return '-'; const [y,m,d] = s.split('-').map(Number); return new Date(y,m-1,d).toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'}); };
+const sisaHari = s => { if (!s || s === '-') return null; const [y,m,d] = s.split('-').map(Number); const t = new Date(); return Math.round((Date.UTC(y,m-1,d) - Date.UTC(t.getFullYear(),t.getMonth(),t.getDate()))/864e5); };
+const labelSisa = n => n === null ? '' : n < 0 ? `Lewat ${-n} hari` : n === 0 ? 'Hari ini' : n === 1 ? 'Besok' : `${n} hari lagi`;
+const formatAngka = v => v.replace(/\D/g,'').replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+const inisial = s => String(s||'?').trim().split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase();
+
+/* ---------- Sambungan ke Apps Script ---------- */
+// GANTI dengan URL Web App Apps Script Anda (berakhiran /exec)
+const API_URL = 'https://script.google.com/macros/s/AKfycbzkQDLx-xm0o2YIZK-55cn4ZTFQBEfK1rm7I59BnYACoaCKlOFwTLPP-fYvXgVhzxOWHQ/exec';
+
+const DEMO = {
+  logbook:[{id:'1',tanggal:'2026-10-10',kejadian:'Ganti Mesin',deskripsi:'',rutin:true,siklus:4,jatuhTempo:'2027-02-10',status:'Belum'}],
+  hutang:[{id:'2',tanggal:'2026-11-10',nama:'Lege',jenis:'Piutang',nominal:50000000,keterangan:'',status:'Belum Lunas',jatuhTempo:'2026-11-27'}]
+};
+const ambilPin = () => { try { return localStorage.getItem('pin') || ''; } catch (e) { return ''; } };
+const simpanPin = p => { try { p ? localStorage.setItem('pin', p) : localStorage.removeItem('pin'); } catch (e) {} };
+
+async function server(fn, ...args) {
+  if (API_URL.indexOf('TEMPEL') === 0) { await new Promise(r => setTimeout(r, 400)); return fn === 'getData' ? DEMO : 'OK'; }
+  let j;
+  try {
+    const r = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ pin: ambilPin(), action: fn, args }) });
+    j = await r.json();
+  } catch (e) {
+    throw 'Tidak bisa terhubung. Periksa internet Anda.';
+  }
+  if (!j.ok) {
+    if (j.code === 'PIN') { simpanPin(''); window.dispatchEvent(new Event('pin-salah')); }
+    throw j.error;
+  }
+  return j.data;
+}
+
+/* ---------- Komponen ---------- */
+function Sheet({ onClose, children }) {
+  return html`<div>
+    <div className="scrim" onClick=${onClose}></div>
+    <div className="sheet" role="dialog" aria-modal="true"><div className="handle"></div>${children}</div>
+  </div>`;
+}
+
+function HutangItem({ h, onTap }) {
+  const piutang = h.jenis === 'Piutang';
+  const n = h.status === 'Belum Lunas' ? sisaHari(h.jatuhTempo) : null;
+  const tone = n === null ? null : n < 0 ? ['var(--red-soft)','var(--red)'] : n <= 3 ? ['var(--amber-soft)','var(--amber)'] : ['var(--surface2)','var(--muted)'];
+  const Tag = onTap ? 'button' : 'div';
+  return html`<${Tag} className="item" onClick=${onTap ? () => onTap(h) : undefined}>
+    <div className="avatar" style=${{background: piutang ? 'var(--green-soft)' : 'var(--red-soft)', color: piutang ? 'var(--green)' : 'var(--red)'}}>${inisial(h.nama)}</div>
+    <div className="body">
+      <div className="t">${h.nama}</div>
+      <div className="s">${piutang ? 'Meminjam dari Anda' : 'Anda meminjam'}${h.keterangan ? ', ' + h.keterangan : ''}</div>
+    </div>
+    <div className="r">
+      <div className="amt" style=${{color: piutang ? 'var(--green)' : 'var(--red)'}}>${piutang ? '+' : '−'}${rpShort(h.nominal)}</div>
+      ${h.status === 'Lunas' ? html`<span className="badge" style=${{background:'var(--surface2)',color:'var(--muted)'}}>Lunas</span>`
+        : tone && html`<span className="badge" style=${{background:tone[0],color:tone[1]}}>${labelSisa(n)}</span>`}
+    </div>
+  </${Tag}>`;
+}
+
+function LogItem({ l }) {
+  const n = l.rutin ? sisaHari(l.jatuhTempo) : null;
+  return html`<div className="item">
+    <div className="lead" style=${{background:'var(--primary-soft)',color:'var(--primary)'}}><${Icon} n=${l.rutin ? 'bell' : 'wrench'}/></div>
+    <div className="body">
+      <div className="t">${l.kejadian}</div>
+      <div className="s">${l.rutin ? `Berikutnya ${fmtTgl(l.jatuhTempo)}` : `Dicatat ${fmtTgl(l.tanggal)}`}</div>
+    </div>
+    ${l.rutin && html`<div className="r"><span className="badge" style=${{background:'var(--primary-soft)',color:'var(--primary)'}}>Tiap ${l.siklus} bln</span>
+      ${n !== null && n <= 14 && html`<div className="s" style=${{marginTop:4}}>${labelSisa(n)}</div>`}</div>`}
+  </div>`;
+}
+
+const Empty = ({ title, text }) => html`<div className="empty"><b>${title}</b>${text}</div>`;
+const Spinner = () => html`<span className="spin" style=${{display:'grid'}}><${Icon} n="refresh" s=${20}/></span>`;
+
+/* ---------- Form ---------- */
+function FormLogbook({ onSave, saving }) {
+  const [f, setF] = useState({ kategori:'logbook', tanggal: today(), kejadian:'', deskripsi:'', isRutin:false, siklus:1 });
+  const set = (k, v) => setF(o => ({ ...o, [k]: v }));
+  return html`<form onSubmit=${e => { e.preventDefault(); onSave(f); }}>
+    <h3>Catatan baru</h3>
+    <div className="field"><label htmlFor="kj">Apa yang dikerjakan?</label>
+      <input id="kj" required value=${f.kejadian} onChange=${e => set('kejadian', e.target.value)} placeholder="Contoh: Ganti oli motor"/></div>
+    <div className="field"><label htmlFor="tg">Tanggal</label>
+      <input id="tg" type="date" required value=${f.tanggal} onChange=${e => set('tanggal', e.target.value)}/></div>
+    <div className="field"><label htmlFor="ds">Catatan (opsional)</label>
+      <textarea id="ds" rows="2" value=${f.deskripsi} onChange=${e => set('deskripsi', e.target.value)} placeholder="Bengkel, biaya, kilometer, dan lainnya"></textarea></div>
+    <div className="toggle-row">
+      <div><b>Ingatkan saya</b><small>Lewat Telegram, email, dan kalender</small></div>
+      <button type="button" className=${'switch' + (f.isRutin ? ' on' : '')} role="switch" aria-checked=${f.isRutin} aria-label="Ingatkan saya" onClick=${() => set('isRutin', !f.isRutin)}></button>
+    </div>
+    ${f.isRutin && html`<div className="stepper"><span>Ulangi setiap</span><div>
+      <button type="button" aria-label="Kurangi" onClick=${() => set('siklus', Math.max(1, f.siklus - 1))}>−</button>
+      <b>${f.siklus} bulan</b>
+      <button type="button" aria-label="Tambah" onClick=${() => set('siklus', Math.min(60, f.siklus + 1))}>+</button></div></div>`}
+    <button className="btn" disabled=${saving}>${saving ? html`<${Spinner}/> Menyimpan…` : 'Simpan catatan'}</button>
+  </form>`;
+}
+
+function FormHutang({ onSave, saving }) {
+  const [f, setF] = useState({ kategori:'hutang', tanggal: today(), namaOrang:'', jenisHutang:'Piutang', nominal:'', keterangan:'', jatuhTempo:'' });
+  const set = (k, v) => setF(o => ({ ...o, [k]: v }));
+  const piutang = f.jenisHutang === 'Piutang';
+  return html`<form onSubmit=${e => { e.preventDefault(); onSave(f); }}>
+    <h3>Catat pinjaman</h3>
+    <div className="seg" style=${{marginBottom:16}}>
+      <button type="button" className=${piutang ? 'on' : ''} onClick=${() => set('jenisHutang','Piutang')}>Orang pinjam ke saya</button>
+      <button type="button" className=${!piutang ? 'on' : ''} onClick=${() => set('jenisHutang','Hutang')}>Saya pinjam</button>
+    </div>
+    <div className="field"><label htmlFor="nm">Jumlah</label>
+      <div className="money"><span>Rp</span><input id="nm" inputMode="numeric" required placeholder="0" value=${f.nominal}
+        style=${{color: piutang ? 'var(--green)' : 'var(--red)'}} onChange=${e => set('nominal', formatAngka(e.target.value))}/></div></div>
+    <div className="field"><label htmlFor="no">${piutang ? 'Siapa yang meminjam?' : 'Pinjam ke siapa?'}</label>
+      <input id="no" required value=${f.namaOrang} onChange=${e => set('namaOrang', e.target.value)} placeholder="Nama orang"/></div>
+    <div className="row2">
+      <div className="field"><label htmlFor="t1">Tanggal</label><input id="t1" type="date" required value=${f.tanggal} onChange=${e => set('tanggal', e.target.value)}/></div>
+      <div className="field"><label htmlFor="t2">Jatuh tempo</label><input id="t2" type="date" value=${f.jatuhTempo} onChange=${e => set('jatuhTempo', e.target.value)}/></div>
+    </div>
+    <div className="field"><label htmlFor="kt">Keterangan (opsional)</label>
+      <input id="kt" value=${f.keterangan} onChange=${e => set('keterangan', e.target.value)} placeholder="Untuk apa?"/></div>
+    <button className="btn" disabled=${saving}>${saving ? html`<${Spinner}/> Menyimpan…` : 'Simpan pinjaman'}</button>
+  </form>`;
+}
+
+/* ---------- Halaman ---------- */
+function hitung(data) {
+  const aktif = data.hutang.filter(h => h.status === 'Belum Lunas');
+  const piutang = aktif.filter(h => h.jenis === 'Piutang').reduce((a, h) => a + h.nominal, 0);
+  const hutang = aktif.filter(h => h.jenis === 'Hutang').reduce((a, h) => a + h.nominal, 0);
+  return { aktif, piutang, hutang };
+}
+
+function Beranda({ data, go, openForm, onTapHutang }) {
+  const { aktif, piutang, hutang } = hitung(data);
+  const saldo = piutang - hutang;
+  const perhatianH = aktif.filter(h => { const n = sisaHari(h.jatuhTempo); return n !== null && n <= 7; })
+    .sort((a, b) => sisaHari(a.jatuhTempo) - sisaHari(b.jatuhTempo));
+  const perhatianL = data.logbook.filter(l => { const n = l.rutin ? sisaHari(l.jatuhTempo) : null; return n !== null && n <= 7; });
+  const berikut = data.logbook.filter(l => l.rutin).sort((a, b) => a.jatuhTempo.localeCompare(b.jatuhTempo)).slice(0, 3);
+
+  return html`<div>
+    <div className="section">
+      <div className="hero">
+        <small>Posisi bersih Anda</small>
+        <div className="big">${saldo < 0 ? '−' : ''}${rp(Math.abs(saldo))}</div>
+        <div className="hero-split">
+          <div><span>Akan diterima</span><b>${rp(piutang)}</b></div>
+          <div><span>Harus dibayar</span><b>${rp(hutang)}</b></div>
+        </div>
+      </div>
+      <div className="quick">
+        <button onClick=${() => openForm('logbook')}><span className="qi" style=${{background:'var(--primary-soft)',color:'var(--primary)'}}><${Icon} n="book"/></span>Catatan baru</button>
+        <button onClick=${() => openForm('hutang')}><span className="qi" style=${{background:'var(--green-soft)',color:'var(--green)'}}><${Icon} n="wallet"/></span>Catat pinjaman</button>
+      </div>
+    </div>
+
+    <div className="section">
+      <div className="section-title"><h2>Perlu perhatian</h2></div>
+      ${perhatianH.length + perhatianL.length === 0
+        ? html`<div className="list"><${Empty} title="Semua aman" text="Tidak ada jatuh tempo dalam 7 hari ke depan."/></div>`
+        : html`<div className="list">
+            ${perhatianH.map(h => html`<${HutangItem} key=${h.id} h=${h} onTap=${onTapHutang}/>`)}
+            ${perhatianL.map(l => html`<${LogItem} key=${l.id} l=${l}/>`)}
+          </div>`}
+    </div>
+
+    <div className="section">
+      <div className="section-title"><h2>Rutinitas berikutnya</h2><button onClick=${() => go('logbook')}>Lihat semua</button></div>
+      ${berikut.length === 0
+        ? html`<div className="list"><${Empty} title="Belum ada rutinitas" text="Nyalakan “Ingatkan saya” saat membuat catatan."/></div>`
+        : html`<div className="list">${berikut.map(l => html`<${LogItem} key=${l.id} l=${l}/>`)}</div>`}
+    </div>
+  </div>`;
+}
+
+function Logbook({ data }) {
+  const [filter, setFilter] = useState('Semua');
+  const list = useMemo(() => data.logbook
+    .filter(l => filter === 'Semua' || (filter === 'Rutin' ? l.rutin : !l.rutin))
+    .sort((a, b) => b.tanggal.localeCompare(a.tanggal)), [data, filter]);
+  return html`<div>
+    <div className="chips">${['Semua','Rutin','Sekali'].map(c => html`<button key=${c} className=${'chip' + (filter === c ? ' on' : '')} onClick=${() => setFilter(c)}>${c}</button>`)}</div>
+    <div className="section" style=${{marginTop:12}}>
+      ${list.length === 0 ? html`<div className="list"><${Empty} title="Belum ada catatan" text="Ketuk Tambah untuk mencatat yang pertama."/></div>`
+        : html`<div className="list">${list.map(l => html`<${LogItem} key=${l.id} l=${l}/>`)}</div>`}
+    </div>
+  </div>`;
+}
+
+function Keuangan({ data, onTapHutang }) {
+  const [tab, setTab] = useState('aktif');
+  const { piutang, hutang } = hitung(data);
+  const list = data.hutang.filter(h => tab === 'lunas' ? h.status === 'Lunas' : h.status !== 'Lunas')
+    .sort((a, b) => (a.jatuhTempo || '9999').localeCompare(b.jatuhTempo || '9999'));
+  return html`<div className="section">
+    <div className="sum">
+      <div style=${{background:'var(--green-soft)'}}><span style=${{color:'var(--green)'}}>Akan diterima</span><b style=${{color:'var(--green)'}}>${rp(piutang)}</b></div>
+      <div style=${{background:'var(--red-soft)'}}><span style=${{color:'var(--red)'}}>Harus dibayar</span><b style=${{color:'var(--red)'}}>${rp(hutang)}</b></div>
+    </div>
+    <div className="seg" style=${{margin:'16px 0 12px'}}>
+      <button className=${tab === 'aktif' ? 'on' : ''} onClick=${() => setTab('aktif')}>Belum lunas</button>
+      <button className=${tab === 'lunas' ? 'on' : ''} onClick=${() => setTab('lunas')}>Lunas</button>
+    </div>
+    ${list.length === 0
+      ? html`<div className="list"><${Empty} title=${tab === 'lunas' ? 'Belum ada yang lunas' : 'Tidak ada pinjaman aktif'} text=${tab === 'lunas' ? 'Pinjaman yang ditandai lunas muncul di sini.' : 'Ketuk Tambah untuk mencatat pinjaman.'}/></div>`
+      : html`<div className="list">${list.map(h => html`<${HutangItem} key=${h.id} h=${h} onTap=${tab === 'lunas' ? null : onTapHutang}/>`)}</div>`}
+  </div>`;
+}
+
+function Detail({ h, saving, onLunas, onClose }) {
+  const piutang = h.jenis === 'Piutang';
+  const Row = (k, v, color) => html`<div className="item"><div className="body"><div className="s">${k}</div><div className="t" style=${{color, whiteSpace:'normal'}}>${v}</div></div></div>`;
+  return html`<div>
+    <h3>${h.nama}</h3>
+    <div className="list" style=${{boxShadow:'none',background:'var(--bg)',marginBottom:16}}>
+      ${Row('Jumlah', rp(h.nominal), piutang ? 'var(--green)' : 'var(--red)')}
+      ${Row('Jenis', piutang ? 'Meminjam dari Anda' : 'Anda meminjam')}
+      ${Row('Tanggal pinjam', fmtTgl(h.tanggal))}
+      ${Row('Jatuh tempo', h.jatuhTempo ? fmtTgl(h.jatuhTempo) + ' (' + labelSisa(sisaHari(h.jatuhTempo)) + ')' : 'Tidak diatur')}
+      ${h.keterangan ? Row('Keterangan', h.keterangan) : null}
+    </div>
+    <button className="btn" disabled=${saving} onClick=${onLunas}>${saving ? html`<${Spinner}/> Menyimpan…` : html`<${Icon} n="check"/> Tandai lunas`}</button>
+    <button className="btn ghost" onClick=${onClose}>Tutup</button>
+  </div>`;
+}
+
+/* ---------- Layar PIN ---------- */
+function LayarPin({ onMasuk, pesan }) {
+  const [pin, setPin] = useState('');
+  return html`<div className="app" style=${{display:'flex',flexDirection:'column',justifyContent:'center',padding:'0 28px',minHeight:'100vh'}}>
+    <div className="lead" style=${{background:'var(--primary-soft)',color:'var(--primary)',width:64,height:64,borderRadius:20,marginBottom:20}}><${Icon} n="wallet" s=${30}/></div>
+    <h1 style=${{margin:'0 0 6px',fontSize:28,fontWeight:800,letterSpacing:'-.02em'}}>Dashboard Personal</h1>
+    <p style=${{margin:'0 0 28px',color:'var(--muted)'}}>Masukkan PIN untuk membuka data Anda.</p>
+    <form onSubmit=${e => { e.preventDefault(); if (pin) onMasuk(pin); }}>
+      <div className="field"><label htmlFor="pin">PIN</label>
+        <input id="pin" type="password" inputMode="numeric" autoComplete="off" autoFocus value=${pin}
+          onChange=${e => setPin(e.target.value)} style=${{fontSize:24,letterSpacing:'.4em',textAlign:'center',height:60}}/></div>
+      ${pesan && html`<p style=${{color:'var(--red)',fontWeight:600,fontSize:14,margin:'0 0 14px'}}>${pesan}</p>`}
+      <button className="btn">Buka</button>
+    </form>
+  </div>`;
+}
+
+/* ---------- App ---------- */
+function App() {
+  const [tab, setTab] = useState('beranda');
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [sheet, setSheet] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [snack, setSnack] = useState(null);
+  const [terkunci, setTerkunci] = useState(API_URL.indexOf('TEMPEL') !== 0 && !ambilPin());
+  const [pesanPin, setPesanPin] = useState('');
+
+  useEffect(() => {
+    const h = () => { setTerkunci(true); setPesanPin('PIN salah. Coba lagi.'); setData(null); };
+    window.addEventListener('pin-salah', h);
+    return () => window.removeEventListener('pin-salah', h);
+  }, []);
+
+  const toast = (msg, err) => { setSnack({ msg, err }); setTimeout(() => setSnack(null), 3500); };
+  const load = () => { setLoading(true); server('getData').then(setData).catch(e => toast('Gagal memuat data: ' + e, true)).finally(() => setLoading(false)); };
+  useEffect(() => { if (!terkunci) load(); }, [terkunci]);
+
+  const simpan = f => {
+    setSaving(true);
+    server('simpanData', f).then(() => { setSheet(null); toast(f.kategori === 'logbook' ? 'Catatan disimpan' : 'Pinjaman disimpan'); load(); })
+      .catch(e => toast('Gagal menyimpan: ' + e, true)).finally(() => setSaving(false));
+  };
+  const lunasi = h => {
+    setSaving(true);
+    server('tandaiLunas', h.id).then(() => { setSheet(null); toast(h.nama + ' ditandai lunas'); load(); })
+      .catch(e => toast('Gagal: ' + e, true)).finally(() => setSaving(false));
+  };
+
+  const judul = {
+    beranda: ['Halo', new Date().toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long'})],
+    logbook: ['Logbook','Catatan dan rutinitas berkala'],
+    keuangan: ['Keuangan','Hutang dan piutang']
+  }[tab];
+  const fab = () => setSheet(tab === 'logbook' ? 'logbook' : tab === 'keuangan' ? 'hutang' : 'pilih');
+  const d = data || { logbook: [], hutang: [] };
+  const bukaDetail = h => setSheet({ detail: h });
+
+  if (terkunci) return html`<${LayarPin} pesan=${pesanPin} onMasuk=${p => { simpanPin(p); setPesanPin(''); setTerkunci(false); }}/>`;
+
+  return html`<div className="app">
+    <header className="appbar">
+      <div><h1>${judul[0]}</h1><p>${judul[1]}</p></div>
+      <button className="icon-btn" aria-label="Muat ulang" onClick=${load}><span className=${loading ? 'spin' : ''} style=${{display:'grid'}}><${Icon} n="refresh"/></span></button>
+    </header>
+
+    ${!data ? html`<div className="section">${[1,2,3,4].map(i => html`<div key=${i} className="skeleton"></div>`)}</div>`
+      : tab === 'beranda' ? html`<${Beranda} data=${d} go=${setTab} openForm=${setSheet} onTapHutang=${bukaDetail}/>`
+      : tab === 'logbook' ? html`<${Logbook} data=${d}/>`
+      : html`<${Keuangan} data=${d} onTapHutang=${bukaDetail}/>`}
+
+    <button className="fab" onClick=${fab}><${Icon} n="plus"/>Tambah</button>
+
+    <nav className="nav">
+      ${[['beranda','home','Beranda'],['logbook','book','Logbook'],['keuangan','wallet','Keuangan']].map(([k, ic, lb]) =>
+        html`<button key=${k} className=${tab === k ? 'on' : ''} aria-current=${tab === k ? 'page' : undefined} onClick=${() => { setTab(k); window.scrollTo(0,0); }}>
+          <span className="pill"><${Icon} n=${ic}/></span>${lb}</button>`)}
+    </nav>
+
+    ${sheet && html`<${Sheet} onClose=${() => !saving && setSheet(null)}>
+      ${sheet === 'pilih' ? html`<div><h3>Mau mencatat apa?</h3><div className="choice">
+          <button onClick=${() => setSheet('logbook')}><span style=${{color:'var(--primary)'}}><${Icon} n="book" s=${26}/></span><div style=${{marginTop:10}}>Catatan</div><small>Servis, kegiatan, rutinitas</small></button>
+          <button onClick=${() => setSheet('hutang')}><span style=${{color:'var(--green)'}}><${Icon} n="wallet" s=${26}/></span><div style=${{marginTop:10}}>Pinjaman</div><small>Hutang atau piutang</small></button>
+        </div></div>`
+      : sheet === 'logbook' ? html`<${FormLogbook} onSave=${simpan} saving=${saving}/>`
+      : sheet === 'hutang' ? html`<${FormHutang} onSave=${simpan} saving=${saving}/>`
+      : html`<${Detail} h=${sheet.detail} saving=${saving} onLunas=${() => lunasi(sheet.detail)} onClose=${() => setSheet(null)}/>`}
+    </${Sheet}>`}
+
+    ${snack && html`<div className=${'snack' + (snack.err ? ' err' : '')} role="status">${snack.msg}</div>`}
+  </div>`;
+}
+
+ReactDOM.createRoot(document.getElementById('app')).render(html`<${App}/>`);
+</script>
+</body>
+</html>
