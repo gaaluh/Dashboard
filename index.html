@@ -137,6 +137,11 @@ button.item:active{background:var(--surface2)}
 .choice button{background:var(--bg);border-radius:20px;padding:18px 14px;text-align:left;font-weight:700}
 .choice small{display:block;color:var(--muted);font-weight:500;font-size:12px;margin-top:4px}
 
+.progres{height:6px;border-radius:6px;background:var(--line);overflow:hidden;margin-top:8px}
+.progres span{display:block;height:100%;border-radius:6px}
+.radio{width:22px;height:22px;border-radius:50%;border:2px solid var(--muted);flex-shrink:0;position:relative}
+.radio.on{border-color:var(--primary)}
+.radio.on::after{content:"";position:absolute;inset:4px;border-radius:50%;background:var(--primary)}
 .kunci{position:fixed;inset:0;z-index:100;background:var(--bg);display:flex;flex-direction:column;justify-content:space-between;padding:calc(48px + env(safe-area-inset-top)) 28px calc(28px + env(safe-area-inset-bottom));max-width:480px;margin:0 auto}
 .kunci-atas{text-align:center}
 .kunci h1{margin:0 0 8px;font-size:24px;font-weight:800;letter-spacing:-.02em}
@@ -261,7 +266,7 @@ function HutangItem({ h, onTap }) {
       <div className="s">${piutang ? 'Meminjam dari Anda' : 'Anda meminjam'}${h.keterangan ? ', ' + h.keterangan : ''}</div>
     </div>
     <div className="r">
-      <div className="amt" style=${{color: piutang ? 'var(--green)' : 'var(--red)'}}>${piutang ? '+' : '−'}${rpShort(h.nominal)}</div>
+      <div className="amt" style=${{color: piutang ? 'var(--green)' : 'var(--red)'}}>${piutang ? '+' : '−'}${rpShort(h.status === 'Lunas' ? h.nominal : sisaOf(h))}</div>
       ${h.status === 'Lunas' ? html`<span className="badge" style=${{background:'var(--surface2)',color:'var(--muted)'}}>Lunas</span>`
         : tone && html`<span className="badge" style=${{background:tone[0],color:tone[1]}}>${labelSisa(n)}</span>`}
     </div>
@@ -380,10 +385,18 @@ function FormHutang({ onSave, onDelete, saving, awal, prefill, namaList }) {
 }
 
 /* ---------- Halaman ---------- */
+const sisaOf = h => h.sisa != null ? h.sisa : h.nominal;
+const dibayarOf = h => h.dibayar || 0;
+const Progres = ({ h, warna }) => {
+  const pct = h.nominal ? Math.min(100, Math.round(dibayarOf(h) / h.nominal * 100)) : 0;
+  return html`<div className="progres" role="progressbar" aria-valuenow=${pct} aria-valuemin="0" aria-valuemax="100" aria-label="Sudah dibayar">
+    <span style=${{width: pct + '%', background: warna}}></span></div>`;
+};
+
 function hitung(data) {
   const aktif = data.hutang.filter(h => h.status === 'Belum Lunas');
-  const piutang = aktif.filter(h => h.jenis === 'Piutang').reduce((a, h) => a + h.nominal, 0);
-  const hutang = aktif.filter(h => h.jenis === 'Hutang').reduce((a, h) => a + h.nominal, 0);
+  const piutang = aktif.filter(h => h.jenis === 'Piutang').reduce((a, h) => a + sisaOf(h), 0);
+  const hutang = aktif.filter(h => h.jenis === 'Hutang').reduce((a, h) => a + sisaOf(h), 0);
   return { aktif, piutang, hutang };
 }
 
@@ -467,7 +480,7 @@ function kelompokkan(hutang, lunas) {
     const key = h.jenis + '|' + String(h.nama).trim().toLowerCase();
     if (!map[key]) map[key] = { key, nama: String(h.nama).trim(), jenis: h.jenis, items: [], total: 0, jt: null };
     const g = map[key];
-    g.items.push(h); g.total += h.nominal;
+    g.items.push(h); g.total += lunas ? h.nominal : sisaOf(h);
     if (h.jatuhTempo && (!g.jt || h.jatuhTempo < g.jt)) g.jt = h.jatuhTempo;
   });
   return Object.values(map).map(g => ({ ...g, items: g.items.sort((a, b) => a.tanggal.localeCompare(b.tanggal)) }))
@@ -518,7 +531,7 @@ function Keuangan({ data, onTapOrang }) {
   </div>`;
 }
 
-function Orang({ g, lunas, saving, onTapItem, onTambah, onLunasSemua }) {
+function Orang({ g, lunas, saving, onTapItem, onTambah, onLunasSemua, onBayar }) {
   const [yakin, setYakin] = useState(false);
   if (!g) return html`<div><h3>Data tidak ditemukan</h3><${Empty} title="" text="Mungkin sudah lunas atau dihapus."/></div>`;
   const piutang = g.jenis === 'Piutang';
@@ -539,41 +552,100 @@ function Orang({ g, lunas, saving, onTapItem, onTambah, onLunasSemua }) {
           <div className="lead" style=${{background:'var(--surface)',color:'var(--muted)',fontWeight:800}}>${i + 1}</div>
           <div className="body">
             <div className="t">${fmtTgl(h.tanggal)}</div>
-            <div className="s">${h.keterangan || (h.jatuhTempo ? 'Jatuh tempo ' + fmtTgl(h.jatuhTempo) : 'Tanpa jatuh tempo')}</div>
+            <div className="s">${!lunas && dibayarOf(h) ? 'Dibayar ' + rp(dibayarOf(h)) + ' dari ' + rp(h.nominal) : h.keterangan || (h.jatuhTempo ? 'Jatuh tempo ' + fmtTgl(h.jatuhTempo) : 'Tanpa jatuh tempo')}</div>
+            ${!lunas && dibayarOf(h) > 0 && html`<${Progres} h=${h} warna=${warna}/>`}
           </div>
-          <div className="r"><div className="amt">${rp(h.nominal)}</div>
+          <div className="r"><div className="amt">${rp(lunas ? h.nominal : sisaOf(h))}</div>
+            ${!lunas && dibayarOf(h) > 0 && html`<div className="s">sisa</div>`}
             ${n !== null && html`<div className="s" style=${{color: n < 0 ? 'var(--red)' : n <= 3 ? 'var(--amber)' : 'var(--muted)'}}>${labelSisa(n)}</div>`}</div>
         </button>`;
       })}
     </div>
     ${!lunas && html`<div>
-      <button className="btn" onClick=${() => onTambah(g)}><${Icon} n="plus"/> Tambah pinjaman ${g.nama}</button>
+      <button className="btn" onClick=${() => onBayar(g)}><${Icon} n="wallet"/> Catat pembayaran</button>
+      <button className="btn ghost" onClick=${() => onTambah(g)}><${Icon} n="plus"/> Tambah pinjaman ${g.nama}</button>
       ${g.items.length > 1 && (yakin
         ? html`<button className="btn ghost" style=${{background:warna,color:'#fff'}} disabled=${saving} onClick=${() => onLunasSemua(g)}>${saving ? 'Menyimpan…' : 'Ya, lunasi semua ' + rp(g.total)}</button>`
         : html`<button className="btn ghost" onClick=${() => setYakin(true)}><${Icon} n="check"/> Lunasi semua</button>`)}
     </div>`}
-    <p style=${{textAlign:'center',fontSize:13,color:'var(--muted)',margin:'14px 0 0'}}>Ketuk salah satu pinjaman untuk melunasi atau mengedit</p>
+    <p style=${{textAlign:'center',fontSize:13,color:'var(--muted)',margin:'14px 0 0'}}>Ketuk salah satu pinjaman untuk melihat riwayat pembayaran, melunasi, atau mengedit</p>
   </div>`;
 }
 
-function Detail({ h, saving, onLunas, onEdit, onClose }) {
+function Detail({ h, saving, onLunas, onEdit, onClose, onBayar, onEditBayar }) {
   const piutang = h.jenis === 'Piutang';
   const lunas = h.status === 'Lunas';
+  const warna = piutang ? 'var(--green)' : 'var(--red)';
+  const riwayat = h.pembayaran || [];
   const Row = (k, v, color) => html`<div className="item"><div className="body"><div className="s">${k}</div><div className="t" style=${{color, whiteSpace:'normal'}}>${v}</div></div></div>`;
   return html`<div>
-    <h3>${h.nama}</h3>
+    <h3>${h.nama}, ${fmtTgl(h.tanggal)}</h3>
+    <div style=${{background: piutang ? 'var(--green-soft)' : 'var(--red-soft)', borderRadius:20, padding:16, marginBottom:16}}>
+      <span style=${{fontSize:12,fontWeight:700,color:warna}}>${lunas ? 'Lunas' : 'Sisa yang belum dibayar'}</span>
+      <b style=${{display:'block',fontSize:24,margin:'4px 0 10px',color:warna}}>${rp(lunas ? 0 : sisaOf(h))}</b>
+      <${Progres} h=${lunas ? { ...h, dibayar: h.nominal } : h} warna=${warna}/>
+      <div style=${{display:'flex',justifyContent:'space-between',fontSize:12,fontWeight:600,color:warna,marginTop:8}}>
+        <span>Dibayar ${rp(dibayarOf(h))}</span><span>Pinjaman ${rp(h.nominal)}</span>
+      </div>
+    </div>
     <div className="list" style=${{boxShadow:'none',background:'var(--bg)',marginBottom:16}}>
-      ${Row('Jumlah', rp(h.nominal), piutang ? 'var(--green)' : 'var(--red)')}
       ${Row('Jenis', piutang ? 'Meminjam dari Anda' : 'Anda meminjam')}
-      ${Row('Tanggal pinjam', fmtTgl(h.tanggal))}
       ${Row('Jatuh tempo', h.jatuhTempo ? fmtTgl(h.jatuhTempo) + (lunas ? '' : ' (' + labelSisa(sisaHari(h.jatuhTempo)) + ')') : 'Tidak diatur')}
       ${h.keterangan ? Row('Keterangan', h.keterangan) : null}
-      ${Row('Status', lunas ? 'Lunas' : 'Belum lunas')}
     </div>
-    ${!lunas && html`<button className="btn" disabled=${saving} onClick=${onLunas}>${saving ? html`<${Spinner}/> Menyimpan…` : html`<${Icon} n="check"/> Tandai lunas`}</button>`}
-    <button className="btn ghost" onClick=${onEdit}><${Icon} n="edit" s=${20}/> Edit</button>
+    <div className="section-title" style=${{marginTop:0}}><h2>Riwayat pembayaran</h2></div>
+    <div className="list" style=${{boxShadow:'none',background:'var(--bg)',marginBottom:16}}>
+      ${riwayat.length === 0
+        ? html`<div className="empty" style=${{padding:'20px'}}>Belum ada pembayaran.</div>`
+        : riwayat.map((p, i) => html`<button key=${p.id} className="item" onClick=${() => onEditBayar(p, h)}>
+            <div className="lead" style=${{background:'var(--surface)',color:warna}}><${Icon} n="check" s=${20}/></div>
+            <div className="body"><div className="t">Cicilan ${i + 1}</div><div className="s">${fmtTgl(p.tanggal)}${p.catatan ? ', ' + p.catatan : ''}</div></div>
+            <div className="r"><div className="amt" style=${{color:warna}}>${rp(p.nominal)}</div></div>
+          </button>`)}
+    </div>
+    ${!lunas && html`<button className="btn" onClick=${() => onBayar(h)}><${Icon} n="wallet"/> Catat pembayaran</button>`}
+    ${!lunas && html`<button className="btn ghost" disabled=${saving} onClick=${onLunas}>${saving ? 'Menyimpan…' : html`<${Icon} n="check"/> Tandai lunas (tanpa pembayaran)`}</button>`}
+    <button className="btn ghost" onClick=${onEdit}><${Icon} n="edit" s=${20}/> Edit pinjaman</button>
     <button className="btn ghost" onClick=${onClose}>Tutup</button>
   </div>`;
+}
+
+function FormBayar({ pilihan: semua, idAwal, awal, onSave, onDelete, saving }) {
+  const pilihan = [...semua].sort((a, b) => a.tanggal.localeCompare(b.tanggal));
+  const edit = !!(awal && awal.id);
+  const [f, setF] = useState(edit
+    ? { kategori:'bayar', id: awal.id, idPinjaman: awal.idPinjaman, tanggal: awal.tanggal, nominal: formatAngka(String(awal.nominal)), catatan: awal.catatan || '' }
+    : { kategori:'bayar', idPinjaman: idAwal || (pilihan.length === 1 ? pilihan[0].id : ''), tanggal: today(), nominal:'', catatan:'' });
+  const [yakinHapus, setYakinHapus] = useState(false);
+  const set = (k, v) => setF(o => ({ ...o, [k]: v }));
+  const dipilih = pilihan.find(h => h.id === f.idPinjaman);
+  const batas = dipilih ? sisaOf(dipilih) + (edit ? Number(awal.nominal) : 0) : 0;
+  const nilai = Number(String(f.nominal).replace(/\./g, '')) || 0;
+  const lebih = dipilih && nilai > batas;
+  return html`<form onSubmit=${e => { e.preventDefault(); if (!f.idPinjaman || lebih) return; onSave(f); }}>
+    <h3>${edit ? 'Edit pembayaran' : 'Catat pembayaran'}</h3>
+    ${!edit && pilihan.length > 1 && html`<div className="field"><label>Pinjaman yang dibayar</label>
+      <div className="list" style=${{boxShadow:'none',background:'var(--bg)'}} role="radiogroup">
+        ${pilihan.map(h => html`<button type="button" key=${h.id} role="radio" aria-checked=${f.idPinjaman === h.id} className="item" onClick=${() => set('idPinjaman', h.id)}>
+          <span className=${'radio' + (f.idPinjaman === h.id ? ' on' : '')}></span>
+          <div className="body"><div className="t">Pinjaman ${fmtTgl(h.tanggal)}</div><div className="s">${rp(h.nominal)}${h.keterangan ? ', ' + h.keterangan : ''}</div></div>
+          <div className="r"><div className="amt">${rp(sisaOf(h))}</div><div className="s">sisa</div></div>
+        </button>`)}
+      </div></div>`}
+    ${dipilih && (edit || pilihan.length === 1) && html`<p style=${{margin:'0 4px 14px',color:'var(--muted)',fontSize:14}}>Pinjaman ${fmtTgl(dipilih.tanggal)}, sisa ${rp(sisaOf(dipilih))}</p>`}
+    <div className="field"><label htmlFor="jb">Jumlah dibayar</label>
+      <div className="money"><span>Rp</span><input id="jb" inputMode="numeric" required placeholder="0" value=${f.nominal} onChange=${e => set('nominal', formatAngka(e.target.value))}/></div>
+      ${dipilih && html`<div style=${{display:'flex',gap:8,marginTop:8,alignItems:'center',flexWrap:'wrap'}}>
+        <button type="button" className="chip" onClick=${() => set('nominal', formatAngka(String(batas)))}>Bayar penuh ${rp(batas)}</button>
+        ${lebih && html`<span style=${{color:'var(--red)',fontSize:13,fontWeight:600}}>Melebihi sisa pinjaman</span>`}
+      </div>`}</div>
+    <div className="field"><label htmlFor="tb">Tanggal bayar</label><input id="tb" type="date" required value=${f.tanggal} onChange=${e => set('tanggal', e.target.value)}/></div>
+    <div className="field"><label htmlFor="cb">Catatan (opsional)</label><input id="cb" value=${f.catatan} onChange=${e => set('catatan', e.target.value)} placeholder="Contoh: transfer BCA"/></div>
+    <button className="btn" disabled=${saving || !f.idPinjaman || lebih}>${saving ? html`<${Spinner}/> Menyimpan…` : !f.idPinjaman ? 'Pilih pinjaman dulu' : edit ? 'Simpan perubahan' : 'Simpan pembayaran'}</button>
+    ${edit && (yakinHapus
+      ? html`<button type="button" className="btn ghost" style=${{background:'var(--red)',color:'#fff'}} disabled=${saving} onClick=${() => onDelete(f)}>Ya, hapus pembayaran ini</button>`
+      : html`<button type="button" className="btn ghost" style=${{color:'var(--red)'}} onClick=${() => setYakinHapus(true)}><${Icon} n="trash" s=${20}/> Hapus pembayaran</button>`)}
+  </form>`;
 }
 
 /* ---------- Layar PIN ---------- */
@@ -703,10 +775,15 @@ function App() {
       .catch(e => toast('Gagal: ' + e, true)).finally(() => setSaving(false));
   };
   const simpan = f => {
+    if (f.kategori === 'bayar') {
+      return jalankan(f.id ? server('editPembayaran', f.id, f) : server('bayarCicilan', f), f.id ? 'Pembayaran diperbarui' : 'Pembayaran dicatat');
+    }
     const req = !f.id ? server('simpanData', f) : f.kategori === 'hutang' ? server('editHutang', f.id, f) : server('editLogbook', f.id, f);
     jalankan(req, f.id ? 'Perubahan disimpan' : f.kategori === 'logbook' ? 'Catatan disimpan' : 'Pinjaman disimpan');
   };
-  const hapus = f => f.kategori === 'hutang'
+  const hapus = f => f.kategori === 'bayar'
+    ? jalankan(server('hapusPembayaran', f.id), 'Pembayaran dihapus')
+    : f.kategori === 'hutang'
     ? jalankan(server('hapusHutang', f.id), 'Pinjaman dihapus')
     : jalankan(server('hapusLogbook', f.id), 'Catatan dihapus');
   const lunasi = h => jalankan(server('tandaiLunas', h.id), 'Pinjaman ' + h.nama + ' ditandai lunas');
@@ -754,10 +831,16 @@ function App() {
       : sheet === 'hutang' ? html`<${FormHutang} onSave=${simpan} saving=${saving} namaList=${namaList}/>`
       : sheet.hutangBaru ? html`<${FormHutang} prefill=${sheet.hutangBaru} onSave=${simpan} saving=${saving} namaList=${namaList}/>`
       : sheet.editHutang ? html`<${FormHutang} key=${sheet.editHutang.id} awal=${sheet.editHutang} onSave=${simpan} onDelete=${hapus} saving=${saving} namaList=${namaList}/>`
+      : sheet.bayar ? html`<${FormBayar} pilihan=${d.hutang.filter(h => sheet.bayar.pilihan.indexOf(h.id) !== -1 && h.status !== 'Lunas')}
+          idAwal=${sheet.bayar.idAwal} onSave=${simpan} saving=${saving}/>`
+      : sheet.editBayar ? html`<${FormBayar} key=${sheet.editBayar.id} pilihan=${d.hutang.filter(h => h.id === sheet.editBayar.idPinjaman)}
+          awal=${sheet.editBayar} onSave=${simpan} onDelete=${hapus} saving=${saving}/>`
       : sheet.orang ? html`<${Orang} g=${grupOrang} lunas=${sheet.lunas} saving=${saving} onTapItem=${bukaDetail}
-          onTambah=${g => setSheet({ hutangBaru: { nama: g.nama, jenis: g.jenis } })} onLunasSemua=${lunasiSemua}/>`
+          onTambah=${g => setSheet({ hutangBaru: { nama: g.nama, jenis: g.jenis } })} onLunasSemua=${lunasiSemua}
+          onBayar=${g => setSheet({ bayar: { pilihan: g.items.map(h => h.id) } })}/>`
       : sheet.edit ? html`<${FormLogbook} key=${sheet.edit.id} awal=${sheet.edit} onSave=${simpan} onDelete=${hapus} saving=${saving}/>`
-      : html`<${Detail} h=${sheet.detail} saving=${saving} onLunas=${() => lunasi(sheet.detail)} onEdit=${() => setSheet({ editHutang: sheet.detail })} onClose=${() => setSheet(null)}/>`}
+      : html`<${Detail} h=${sheet.detail} saving=${saving} onLunas=${() => lunasi(sheet.detail)} onEdit=${() => setSheet({ editHutang: sheet.detail })} onClose=${() => setSheet(null)}
+          onBayar=${h => setSheet({ bayar: { pilihan: [h.id], idAwal: h.id } })} onEditBayar=${p => setSheet({ editBayar: p })}/>`}
     </${Sheet}>`}
 
     ${snack && !terkunci && html`<div className=${'snack' + (snack.err ? ' err' : '')} role="status">${snack.msg}</div>`}
