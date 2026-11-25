@@ -137,6 +137,23 @@ button.item:active{background:var(--surface2)}
 .choice button{background:var(--bg);border-radius:20px;padding:18px 14px;text-align:left;font-weight:700}
 .choice small{display:block;color:var(--muted);font-weight:500;font-size:12px;margin-top:4px}
 
+.kunci{position:fixed;inset:0;z-index:100;background:var(--bg);display:flex;flex-direction:column;justify-content:space-between;padding:calc(48px + env(safe-area-inset-top)) 28px calc(28px + env(safe-area-inset-bottom));max-width:480px;margin:0 auto}
+.kunci-atas{text-align:center}
+.kunci h1{margin:0 0 8px;font-size:24px;font-weight:800;letter-spacing:-.02em}
+.kunci p{margin:0;color:var(--muted);font-size:14px;font-weight:600;min-height:20px}
+.kunci p.err{color:var(--red)}
+.titik{display:flex;justify-content:center;gap:14px;margin-top:28px}
+.titik span{width:14px;height:14px;border-radius:50%;border:2px solid var(--muted);transition:background .1s}
+.titik span.isi{background:var(--text);border-color:var(--text)}
+.goyang{animation:goyang .35s}
+@keyframes goyang{20%,60%{transform:translateX(-10px)}40%,80%{transform:translateX(10px)}}
+.keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;max-width:320px;width:100%;margin:0 auto}
+.keypad button{height:68px;border-radius:24px;background:var(--surface);color:var(--text);font-size:26px;font-weight:700;box-shadow:var(--shadow);display:grid;place-items:center}
+.keypad button:active{background:var(--surface2)}
+.keypad button.fn{background:transparent;box-shadow:none;color:var(--muted)}
+.keypad button.ok{background:var(--primary);color:var(--on-primary)}
+.keypad button:disabled{opacity:.4}
+.terkunci-isi{visibility:hidden}
 .snack{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(160px + env(safe-area-inset-bottom));z-index:60;background:#1F2235;color:#fff;padding:14px 18px;border-radius:14px;font-size:14px;font-weight:600;width:calc(100% - 40px);max-width:440px;animation:fade .2s;box-shadow:0 8px 24px rgba(0,0,0,.25)}
 .snack.err{background:#8E1F35}
 
@@ -165,6 +182,8 @@ const P = {
   search:'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM21 21l-5-5',
   x:'M18 6 6 18M6 6l12 12',
   edit:'M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z',
+  lock:'M6 11h12a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-8a1 1 0 0 1 1-1zM8 11V7a4 4 0 0 1 8 0v4',
+  back:'M21 5H9l-6 7 6 7h12a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1zM17 9l-6 6M11 9l6 6',
   trash:'M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14'
 };
 const Icon = ({ n, s = 22 }) => html`<svg width=${s} height=${s} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d=${P[n]}/></svg>`;
@@ -187,8 +206,21 @@ const DEMO = {
   logbook:[{id:'1',tanggal:'2026-10-10',kejadian:'Ganti Mesin',deskripsi:'',rutin:true,siklus:'4 bulan',jatuhTempo:'2027-02-10',status:'Belum'}],
   hutang:[{id:'2',tanggal:'2026-11-10',nama:'Lege',jenis:'Piutang',nominal:50000000,keterangan:'',status:'Belum Lunas',jatuhTempo:'2026-11-27'}]
 };
-const ambilPin = () => { try { return localStorage.getItem('pin') || ''; } catch (e) { return ''; } };
-const simpanPin = p => { try { p ? localStorage.setItem('pin', p) : localStorage.removeItem('pin'); } catch (e) {} };
+// PIN hanya disimpan di memori selama aplikasi terbuka. Di HP hanya tersimpan versi tersandi (hash).
+let PIN_MEM = '';
+const DEMO_MODE = API_URL.indexOf('TEMPEL') === 0;
+const ambilPin = () => PIN_MEM;
+const ls = {
+  get: k => { try { return localStorage.getItem(k); } catch (e) { return null; } },
+  set: (k, v) => { try { v === null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} }
+};
+ls.set('pin', null);   // bersihkan PIN versi lama yang tersimpan apa adanya
+async function hashPin(p) {
+  if (!(window.crypto && crypto.subtle)) return null;
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('dashboard-personal:' + p));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+const lupakanPin = () => { PIN_MEM = ''; ls.set('pin_hash', null); ls.set('pin_len', null); };
 
 const bacaCache = () => { try { return JSON.parse(localStorage.getItem('cache_data') || 'null'); } catch (e) { return null; } };
 const simpanCache = d => { try { d ? localStorage.setItem('cache_data', JSON.stringify(d)) : localStorage.removeItem('cache_data'); } catch (e) {} };
@@ -203,7 +235,7 @@ async function server(fn, ...args) {
     throw 'Tidak bisa terhubung. Periksa internet Anda.';
   }
   if (!j.ok) {
-    if (j.code === 'PIN') { simpanPin(''); simpanCache(null); window.dispatchEvent(new Event('pin-salah')); }
+    if (j.code === 'PIN') { lupakanPin(); simpanCache(null); window.dispatchEvent(new Event('pin-salah')); }
     throw j.error;
   }
   return j.data;
@@ -545,38 +577,121 @@ function Detail({ h, saving, onLunas, onEdit, onClose }) {
 }
 
 /* ---------- Layar PIN ---------- */
-function LayarPin({ onMasuk, pesan }) {
+function LayarPin({ onMasuk, pesan, memeriksa }) {
   const [pin, setPin] = useState('');
-  return html`<div className="app" style=${{display:'flex',flexDirection:'column',justifyContent:'center',padding:'0 28px',minHeight:'100vh'}}>
-    <div className="lead" style=${{background:'var(--primary-soft)',color:'var(--primary)',width:64,height:64,borderRadius:20,marginBottom:20}}><${Icon} n="wallet" s=${30}/></div>
-    <h1 style=${{margin:'0 0 6px',fontSize:28,fontWeight:800,letterSpacing:'-.02em'}}>Dashboard Personal</h1>
-    <p style=${{margin:'0 0 28px',color:'var(--muted)'}}>Masukkan PIN untuk membuka data Anda.</p>
-    <form onSubmit=${e => { e.preventDefault(); if (pin) onMasuk(pin); }}>
-      <div className="field"><label htmlFor="pin">PIN</label>
-        <input id="pin" type="password" inputMode="numeric" autoComplete="off" autoFocus value=${pin}
-          onChange=${e => setPin(e.target.value)} style=${{fontSize:24,letterSpacing:'.4em',textAlign:'center',height:60}}/></div>
-      ${pesan && html`<p style=${{color:'var(--red)',fontWeight:600,fontSize:14,margin:'0 0 14px'}}>${pesan}</p>`}
-      <button className="btn">Buka</button>
-    </form>
+  const [salahLokal, setSalahLokal] = useState(0);
+  const [tungguSampai, setTungguSampai] = useState(0);
+  const [, setDetik] = useState(0);
+  const [goyang, setGoyang] = useState(false);
+  const panjang = Number(ls.get('pin_len')) || 0;
+  const tunggu = Math.max(0, Math.ceil((tungguSampai - Date.now()) / 1000));
+
+  useEffect(() => { if (!tunggu) return; const t = setInterval(() => setDetik(x => x + 1), 1000); return () => clearInterval(t); }, [tungguSampai, tunggu > 0]);
+
+  const kirim = async p => {
+    if (!p || tunggu || memeriksa) return;
+    const hasil = await onMasuk(p);
+    if (hasil === false) {
+      const n = salahLokal + 1;
+      setSalahLokal(n); setPin(''); setGoyang(true); setTimeout(() => setGoyang(false), 400);
+      if (n % 5 === 0) setTungguSampai(Date.now() + 30000);
+    }
+  };
+  const tekan = k => {
+    if (tunggu || memeriksa) return;
+    if (k === 'hapus') return setPin(p => p.slice(0, -1));
+    if (k === 'ok') return kirim(pin);
+    if (pin.length >= 12) return;
+    const baru = pin + k;
+    setPin(baru);
+    if (panjang && baru.length === panjang) setTimeout(() => kirim(baru), 120);
+  };
+
+  useEffect(() => {
+    const h = e => { if (/^[0-9]$/.test(e.key)) tekan(e.key); else if (e.key === 'Backspace') tekan('hapus'); else if (e.key === 'Enter') tekan('ok'); };
+    window.addEventListener('keydown', h); return () => window.removeEventListener('keydown', h);
+  });
+
+  const titik = panjang || Math.max(4, pin.length);
+  const info = tunggu ? `Terlalu banyak percobaan. Tunggu ${tunggu} detik.`
+    : memeriksa ? 'Memeriksa PIN…'
+    : salahLokal ? 'PIN salah. Coba lagi.'
+    : pesan || (panjang ? 'Masukkan PIN Anda' : 'Masukkan PIN, lalu ketuk ✓');
+
+  return html`<div className="kunci" role="dialog" aria-modal="true" aria-label="Masukkan PIN">
+    <div className="kunci-atas">
+      <div className="lead" style=${{background:'var(--primary-soft)',color:'var(--primary)',width:60,height:60,borderRadius:20,margin:'0 auto 16px'}}><${Icon} n="lock" s=${28}/></div>
+      <h1>Dashboard Personal</h1>
+      <p className=${salahLokal || pesan || tunggu ? 'err' : ''} role="status">${info}</p>
+      <div className=${'titik' + (goyang ? ' goyang' : '')} aria-hidden="true">
+        ${Array.from({ length: titik }, (_, i) => html`<span key=${i} className=${i < pin.length ? 'isi' : ''}></span>`)}
+      </div>
+    </div>
+    <div className="keypad">
+      ${['1','2','3','4','5','6','7','8','9','hapus','0','ok'].map(k => html`<button key=${k} type="button"
+          aria-label=${k === 'hapus' ? 'Hapus' : k === 'ok' ? 'Buka' : k}
+          className=${k === 'ok' ? 'ok' : k === 'hapus' ? 'fn' : ''}
+          disabled=${!!tunggu || memeriksa || (k === 'ok' && !pin)}
+          onClick=${() => tekan(k)}>
+          ${k === 'hapus' ? html`<${Icon} n="back" s=${24}/>` : k === 'ok' ? (memeriksa ? html`<${Spinner}/>` : html`<${Icon} n="check" s=${24}/>`) : k}
+        </button>`)}
+    </div>
   </div>`;
 }
 
 /* ---------- App ---------- */
 function App() {
   const [tab, setTab] = useState('beranda');
-  const [data, setData] = useState(() => (API_URL.indexOf('TEMPEL') !== 0 && ambilPin()) ? bacaCache() : null);
+  const [data, setData] = useState(() => DEMO_MODE ? null : bacaCache());
   const [loading, setLoading] = useState(true);
   const [sheet, setSheet] = useState(null);
   const [saving, setSaving] = useState(false);
   const [snack, setSnack] = useState(null);
-  const [terkunci, setTerkunci] = useState(API_URL.indexOf('TEMPEL') !== 0 && !ambilPin());
+  const [terkunci, setTerkunci] = useState(!DEMO_MODE);
   const [pesanPin, setPesanPin] = useState('');
+  const [memeriksa, setMemeriksa] = useState(false);
 
+  // PIN salah / diganti di server → kunci dan minta PIN terbaru
   useEffect(() => {
-    const h = () => { setTerkunci(true); setPesanPin('PIN salah. Coba lagi.'); setData(null); simpanCache(null); };
+    const h = () => { setTerkunci(true); setSheet(null); setPesanPin('PIN salah atau sudah diganti. Masukkan PIN terbaru.'); setData(null); };
     window.addEventListener('pin-salah', h);
     return () => window.removeEventListener('pin-salah', h);
   }, []);
+
+  // Kunci otomatis setiap aplikasi ditinggalkan (pindah ke WhatsApp, layar utama, dll.)
+  useEffect(() => {
+    if (DEMO_MODE) return;
+    const kunci = () => { if (document.visibilityState === 'hidden') { PIN_MEM = ''; setPesanPin(''); setTerkunci(true); } };
+    document.addEventListener('visibilitychange', kunci);
+    window.addEventListener('pagehide', kunci);
+    return () => { document.removeEventListener('visibilitychange', kunci); window.removeEventListener('pagehide', kunci); };
+  }, []);
+
+  // Membuka kunci: cocokkan dengan hash di HP (instan). Pertama kali: cek ke server.
+  const masuk = async p => {
+    const hashTersimpan = ls.get('pin_hash');
+    const h = await hashPin(p);
+    if (hashTersimpan && h) {
+      if (h !== hashTersimpan) return false;
+      PIN_MEM = p; setPesanPin(''); setTerkunci(false);
+      return true;
+    }
+    setMemeriksa(true);
+    PIN_MEM = p;
+    try {
+      const d = await server('getData');
+      if (h) { ls.set('pin_hash', h); ls.set('pin_len', String(p.length)); }
+      setData(d); simpanCache(d); setPesanPin(''); setTerkunci(false);
+      return true;
+    } catch (e) {
+      PIN_MEM = '';
+      if (String(e).indexOf('PIN salah') !== -1) return false;
+      setPesanPin(String(e));
+      return null;
+    } finally {
+      setMemeriksa(false);
+    }
+  };
 
   const toast = (msg, err) => { setSnack({ msg, err }); setTimeout(() => setSnack(null), 3500); };
   const load = () => { setLoading(true); server('getData').then(d => { setData(d); simpanCache(d); }).catch(e => toast('Gagal memuat data: ' + e, true)).finally(() => setLoading(false)); };
@@ -609,9 +724,9 @@ function App() {
   const namaList = [...new Set(d.hutang.map(h => String(h.nama).trim()))].sort();
   const grupOrang = sheet && sheet.orang ? kelompokkan(d.hutang, sheet.lunas).find(g => g.key === sheet.orang) : null;
 
-  if (terkunci) return html`<${LayarPin} pesan=${pesanPin} onMasuk=${p => { simpanPin(p); setPesanPin(''); setTerkunci(false); }}/>`;
-
-  return html`<div className="app">
+  return html`<div>
+    ${terkunci && html`<${LayarPin} pesan=${pesanPin} memeriksa=${memeriksa} onMasuk=${masuk}/>`}
+    <div className=${'app' + (terkunci ? ' terkunci-isi' : '')} aria-hidden=${terkunci ? 'true' : undefined}>
     <header className="appbar">
       <div><h1>${judul[0]}</h1><p>${judul[1]}</p></div>
       <button className="icon-btn" aria-label="Muat ulang" onClick=${load}><span className=${loading ? 'spin' : ''} style=${{display:'grid'}}><${Icon} n="refresh"/></span></button>
@@ -645,7 +760,8 @@ function App() {
       : html`<${Detail} h=${sheet.detail} saving=${saving} onLunas=${() => lunasi(sheet.detail)} onEdit=${() => setSheet({ editHutang: sheet.detail })} onClose=${() => setSheet(null)}/>`}
     </${Sheet}>`}
 
-    ${snack && html`<div className=${'snack' + (snack.err ? ' err' : '')} role="status">${snack.msg}</div>`}
+    ${snack && !terkunci && html`<div className=${'snack' + (snack.err ? ' err' : '')} role="status">${snack.msg}</div>`}
+    </div>
   </div>`;
 }
 
