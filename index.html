@@ -562,7 +562,7 @@ function Orang({ g, lunas, saving, onTapItem, onTambah, onLunasSemua, onBayar })
       })}
     </div>
     ${!lunas && html`<div>
-      <button className="btn" onClick=${() => onBayar(g)}><${Icon} n="wallet"/> Catat pembayaran</button>
+      <button className="btn" onClick=${() => onBayar(g)}><${Icon} n="wallet"/> Cicil pembayaran</button>
       <button className="btn ghost" onClick=${() => onTambah(g)}><${Icon} n="plus"/> Tambah pinjaman ${g.nama}</button>
       ${g.items.length > 1 && (yakin
         ? html`<button className="btn ghost" style=${{background:warna,color:'#fff'}} disabled=${saving} onClick=${() => onLunasSemua(g)}>${saving ? 'Menyimpan…' : 'Ya, lunasi semua ' + rp(g.total)}</button>`
@@ -603,7 +603,7 @@ function Detail({ h, saving, onLunas, onEdit, onClose, onBayar, onEditBayar }) {
             <div className="r"><div className="amt" style=${{color:warna}}>${rp(p.nominal)}</div></div>
           </button>`)}
     </div>
-    ${!lunas && html`<button className="btn" onClick=${() => onBayar(h)}><${Icon} n="wallet"/> Catat pembayaran</button>`}
+    ${!lunas && html`<button className="btn" onClick=${() => onBayar(h)}><${Icon} n="wallet"/> Cicil pembayaran</button>`}
     ${!lunas && html`<button className="btn ghost" disabled=${saving} onClick=${onLunas}>${saving ? 'Menyimpan…' : html`<${Icon} n="check"/> Tandai lunas (tanpa pembayaran)`}</button>`}
     <button className="btn ghost" onClick=${onEdit}><${Icon} n="edit" s=${20}/> Edit pinjaman</button>
     <button className="btn ghost" onClick=${onClose}>Tutup</button>
@@ -623,7 +623,7 @@ function FormBayar({ pilihan: semua, idAwal, awal, onSave, onDelete, saving }) {
   const nilai = Number(String(f.nominal).replace(/\./g, '')) || 0;
   const lebih = dipilih && nilai > batas;
   return html`<form onSubmit=${e => { e.preventDefault(); if (!f.idPinjaman || lebih) return; onSave(f); }}>
-    <h3>${edit ? 'Edit pembayaran' : 'Catat pembayaran'}</h3>
+    <h3>${edit ? 'Edit pembayaran' : 'Cicil pembayaran'}</h3>
     ${!edit && pilihan.length > 1 && html`<div className="field"><label>Pinjaman yang dibayar</label>
       <div className="list" style=${{boxShadow:'none',background:'var(--bg)'}} role="radiogroup">
         ${pilihan.map(h => html`<button type="button" key=${h.id} role="radio" aria-checked=${f.idPinjaman === h.id} className="item" onClick=${() => set('idPinjaman', h.id)}>
